@@ -1,0 +1,7 @@
+<?php
+namespace App\Http\Controllers; use App\Models\SchoolEvent; use Illuminate\Http\Request; use Illuminate\Support\Facades\Auth;
+class SchoolEventController extends Controller {
+    public function store(Request $request){ if (Auth::user()->role === 'school_admin' && Auth::user()->location_id != $request->input('location_id')) { return back()->withErrors(['error' => '您沒有權限新增此校區的事件。']); } $validated = $request->validate(['location_id' => 'required|exists:locations,id,type,school', 'title' => 'required|string|max:255', 'start_date' => 'required|date', 'end_date' => 'required|date|after_or_equal:start_date',]); SchoolEvent::create($validated); return back()->with('success', '校務事件已新增'); }
+    public function update(Request $request, SchoolEvent $schoolEvent){ if (Auth::user()->role === 'school_admin' && Auth::user()->location_id != $request->input('location_id')) { return back()->withErrors(['error' => '您沒有權限修改此校區的事件。']); } $validated = $request->validate(['location_id' => 'required|exists:locations,id,type,school', 'title' => 'required|string|max:255', 'start_date' => 'required|date', 'end_date' => 'required|date|after_or_equal:start_date',]); $schoolEvent->update($validated); return back()->with('success', '校務事件已更新'); }
+    public function destroy(SchoolEvent $schoolEvent){ if (Auth::user()->role === 'school_admin' && Auth::user()->location_id != $schoolEvent->location_id) { return back()->withErrors(['error' => '您沒有權限刪除此校區的事件。']); } $schoolEvent->delete(); return back()->with('success', '校務事件已刪除'); }
+}
