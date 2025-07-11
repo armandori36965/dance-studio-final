@@ -64,9 +64,22 @@ function editItem(modalId, item) {
     }
 }
 
+// 【最終優化】修正 resetForm 函式，避免顏色輸入框出錯
 function resetForm(modalId) {
     const form = document.getElementById(`${modalId}-form`);
-    form.reset();
+    if (!form) return;
+
+    // 分別清空每個輸入欄位
+    form.querySelectorAll('input, select').forEach(input => {
+        if (input.type === 'color') {
+            input.value = '#000000'; // 為顏色欄位設定預設值
+        } else if (input.tagName === 'SELECT') {
+            input.selectedIndex = 0; // 重設下拉選單
+        } else if (input.type !== 'hidden') {
+            input.value = ''; // 其他輸入欄位設為空值
+        }
+    });
+    
     form.querySelector('h3').textContent = "新增項目";
     form.action = form.dataset.storeRoute;
     form.querySelector('[name="_method"]').value = "POST";
@@ -148,13 +161,11 @@ function confirmDeleteItem(itemId, itemName, deleteUrl, modelType) {
                 body: new URLSearchParams({ '_method': 'DELETE' })
             });
 
-            const result = await response.json(); // 假設所有 destroy 都會回傳 JSON
+            const result = await response.json();
 
             if (response.ok) {
                 showFeedbackModal(result.message || '刪除成功！', 'success');
-                // 【關鍵修正】確保 item.id 存在
-                const dataToUpdate = result.data || { id: itemId };
-                updateAppDataAndUI(dataToUpdate, modelType, 'DELETE');
+                updateAppDataAndUI(result.data, modelType, 'DELETE');
             } else {
                 const errorMessage = result.message || '刪除失敗';
                 showFeedbackModal(errorMessage, 'error');
@@ -166,22 +177,27 @@ function confirmDeleteItem(itemId, itemName, deleteUrl, modelType) {
     });
 }
 
+function getDataKeyFromModelType(modelType) {
+    if (modelType === 'campus') return 'campuses';
+    return modelType.replace(/-(\w)/g, (_match, char) => char.toUpperCase()) + 's';
+}
+
 function updateAppDataAndUI(item, modelType, method) {
-    // 【關鍵修正】增加對 item 的有效性檢查，防止JS錯誤
     if (!item || typeof item.id === 'undefined') {
         console.error('Update failed: item or item.id is undefined.', item);
         return;
     }
     
-    const dataKey = modelType.replace(/-(\w)/g, (m, c) => c.toUpperCase()) + 's';
+    const dataKey = getDataKeyFromModelType(modelType);
+    const methodUpper = method.toUpperCase();
 
-    if (method === 'DELETE') {
+    if (methodUpper === 'DELETE') {
         if (AppData[dataKey]) {
             AppData[dataKey] = AppData[dataKey].filter(d => d.id !== item.id);
         }
-    } else if (method === 'POST') {
+    } else if (methodUpper === 'POST') {
         if (AppData[dataKey]) AppData[dataKey].push(item);
-    } else if (method === 'PUT') {
+    } else if (methodUpper === 'PUT') {
         if (AppData[dataKey]) {
             const index = AppData[dataKey].findIndex(d => d.id === item.id);
             if (index > -1) AppData[dataKey][index] = item;
@@ -199,7 +215,12 @@ function updateAppDataAndUI(item, modelType, method) {
         if(modelType === 'course-template') updateAllSelectOptions('course_template_id', AppData.courseTemplates);
         if(modelType === 'teacher') updateAllSelectOptions('teacher_id', AppData.teachers);
         
-        const modalId = modelType.replace('-template','').split('-')[0] + '-modal';
+        let modalId;
+        if (modelType === 'course-template') {
+            modalId = 'template-modal';
+        } else {
+            modalId = modelType.split('-')[0] + '-modal';
+        }
         resetForm(modalId);
     }
 }
@@ -231,11 +252,18 @@ function updateCourseOnCalendar(course, action) {
 }
 
 function redrawManagementList(modelType) {
-    const modalId = modelType.replace('-template','').split('-')[0] + '-modal';
+    let modalId;
+    if (modelType === 'course-template') {
+        modalId = 'template-modal';
+    } else {
+        modalId = modelType.split('-')[0] + '-modal';
+    }
     const listElement = document.querySelector(`#${modalId} .management-item-list ul`);
     if(!listElement) return;
-    const dataKey = modelType.replace(/-(\w)/g, (m, c) => c.toUpperCase()) + 's';
+    
+    const dataKey = getDataKeyFromModelType(modelType);
     const items = AppData[dataKey] || [];
+    
     listElement.innerHTML = '';
     if (items.length === 0) {
         listElement.innerHTML = '<li class="py-2 text-gray-500">- 尚無項目</li>';
@@ -282,7 +310,6 @@ function showFeedbackModal(message, type = 'success', onConfirm = null) {
         const cancelButton = document.createElement('button'); cancelButton.className = 'btn btn-secondary'; cancelButton.textContent = '取消'; cancelButton.onclick = () => closeModal('feedback-modal'); buttonsContainer.appendChild(cancelButton);
         const confirmButton = document.createElement('button'); confirmButton.className = 'btn bg-red-600 text-white hover:bg-red-700'; confirmButton.textContent = '確定刪除'; confirmButton.onclick = () => { if (onConfirm) onConfirm(); closeModal('feedback-modal'); }; buttonsContainer.appendChild(confirmButton);
     } else {
-        // 【修正】將自動關閉時間調整為 1.5 秒
         setTimeout(() => closeModal('feedback-modal'), 1500);
     }
     openModal('feedback-modal');

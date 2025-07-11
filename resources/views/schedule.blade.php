@@ -59,7 +59,6 @@
                                 @if(isset($groupedEvents[$date->format('Y-m-d')]))@foreach($groupedEvents[$date->format('Y-m-d')] as $event)<div class="school-event-item text-xs text-center p-1 rounded" title="{{ $event->title }}"><i class="fa fa-calendar-times mr-1"></i>{{ $event->title }}</div>@endforeach @endif
                                 @if(isset($groupedCourses[$date->format('Y-m-d')]))
                                     @foreach ($groupedCourses[$date->format('Y-m-d')] as $course)
-                                        {{-- 【修正】使用 optional() 輔助函式，避免在 location 或 campus 不存在時報錯 --}}
                                         <div class="course-item text-xs p-1.5 rounded-md" style="border-left-color: {{ optional($course->location->campus)->color ?? '#A9A9A9' }};" data-course-id="{{ $course->id }}" onclick="event.stopPropagation(); openEditModal({{ json_encode($course) }})">
                                             {{ optional($course->courseTemplate)->name }}
                                         </div>

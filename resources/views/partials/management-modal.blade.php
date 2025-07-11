@@ -27,10 +27,8 @@
                 <h3 id="{{ $modalId }}-form-title" class="text-lg font-header mb-4 text-[#5C5248]">新增項目</h3>
                 @foreach ($fields as $field)
                     <div>
-                        {{-- 【修正】在 label 的 for 屬性中加入 modalId 前綴，確保唯一性 --}}
                         <label for="{{ $modalId }}-{{ $field['name'] }}" class="block text-sm font-medium text-gray-700">{{ $field['label'] }}</label>
                         @if ($field['type'] === 'select')
-                            {{-- 【修正】在 select 的 id 屬性中加入 modalId 前綴 --}}
                             <select name="{{ $field['name'] }}" id="{{ $modalId }}-{{ $field['name'] }}" class="form-select mt-1 block w-full">
                                 <option value="">-- 請選擇 --</option>
                                 @if(isset($field['options']))
@@ -40,7 +38,6 @@
                                 @endif
                             </select>
                         @else
-                            {{-- 【修正】在 input 的 id 屬性中加入 modalId 前綴 --}}
                             <input type="{{ $field['type'] }}" name="{{ $field['name'] }}" id="{{ $modalId }}-{{ $field['name'] }}" class="form-input mt-1 block w-full" @if($field['type'] === 'number') min="0" @endif required>
                         @endif
                     </div>
@@ -49,7 +46,6 @@
             <div class="mt-8 flex justify-between items-center">
                 <button type="button" id="{{ $modalId }}-delete-btn" class="btn text-red-600 hover:bg-red-50 hidden">刪除</button>
                 <div class="flex gap-3 ml-auto">
-                    <button type="button" onclick="closeModal('{{ $modalId }}')" class="btn btn-secondary">返回</button>
                     <button type="button" onclick="resetForm('{{ $modalId }}')" class="btn btn-secondary">重設</button>
                     <button type="submit" form="{{ $modalId }}-form" class="btn btn-primary">儲存</button>
                 </div>

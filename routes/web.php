@@ -47,8 +47,10 @@ Route::middleware(['auth'])->group(function () {
 
     // 課程範本管理 API
     Route::post('/course-templates', [CourseTemplateController::class, 'store'])->name('course-templates.store');
-    Route::put('/course-templates/{courseTemplate}', [CourseTemplateController::class, 'update'])->name('course-templates.update');
-    Route::delete('/course-templates/{courseTemplate}', [CourseTemplateController::class, 'destroy'])->name('course-templates.destroy');
+    // 【最終修正】將 {courseTemplate} 改為 {course_template}
+    Route::put('/course-templates/{course_template}', [CourseTemplateController::class, 'update'])->name('course-templates.update');
+    // 【最終修正】將 {courseTemplate} 改為 {course_template}
+    Route::delete('/course-templates/{course_template}', [CourseTemplateController::class, 'destroy'])->name('course-templates.destroy');
     
     // 校務事件管理 API (如果需要的話)
     Route::post('/school-events', [SchoolEventController::class, 'store'])->name('school-events.store');
