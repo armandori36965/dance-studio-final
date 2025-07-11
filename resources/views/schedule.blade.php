@@ -29,8 +29,7 @@
                 <div class="flex-1 min-w-[200px]"><select id="filter_campus" class="form-select mt-1 block w-full shadow-sm" onchange="applyFilters()"><option value="">所有校區</option>@foreach ($campuses as $campus)<option value="{{ $campus->id }}" {{ request('campus_id') == $campus->id ? 'selected' : '' }}>{{ $campus->name }}</option>@endforeach</select></div>
                 <div class="flex-1 min-w-[200px]"><select id="filter_course_template" class="form-select mt-1 block w-full shadow-sm" onchange="applyFilters()"><option value="">所有課程</option>@foreach ($courseTemplates as $template)<option value="{{ $template->id }}" {{ request('course_template_id') == $template->id ? 'selected' : '' }}>{{ $template->name }}</option>@endforeach</select></div>
                 <div class="ml-auto flex gap-2 flex-wrap">
-                    <button class="btn btn-secondary" onclick="openManagementModal('campus-modal')">校區</button>
-                    <button class="btn btn-secondary" onclick="openManagementModal('location-modal')">地點</button>
+                    <button class="btn btn-secondary" onclick="openManagementModal('campus-modal')">校區與地點</button>
                     <button class="btn btn-secondary" onclick="openManagementModal('template-modal')">課程</button>
                     <button class="btn btn-secondary" onclick="openManagementModal('teacher-modal')">老師</button>
                 </div>
@@ -55,12 +54,14 @@
                     <div class="day-cell p-1 border-r border-b @if(!$date->isSameMonth($currentDate)) other-month @endif @if($date->isToday()) today @endif">
                         <div class="day-cell-content h-full" onclick="openAddModal('{{ $date->format('Y-m-d') }}')" data-date="{{ $date->format('Y-m-d') }}">
                             <div class="day-number-wrapper"><div class="day-number text-sm">{{ $date->day }}</div></div>
-                            <div class="mt-1 space-y-1">
+                            <div class="event-list mt-1 space-y-1">
                                 @if(isset($groupedEvents[$date->format('Y-m-d')]))@foreach($groupedEvents[$date->format('Y-m-d')] as $event)<div class="school-event-item text-xs text-center p-1 rounded" title="{{ $event->title }}"><i class="fa fa-calendar-times mr-1"></i>{{ $event->title }}</div>@endforeach @endif
                                 @if(isset($groupedCourses[$date->format('Y-m-d')]))
                                     @foreach ($groupedCourses[$date->format('Y-m-d')] as $course)
-                                        <div class="course-item text-xs p-1.5 rounded-md" style="border-left-color: {{ optional($course->location->campus)->color ?? '#A9A9A9' }};" data-course-id="{{ $course->id }}" onclick="event.stopPropagation(); openEditModal({{ json_encode($course) }})">
-                                            {{ optional($course->courseTemplate)->name }}
+                                        <div class="course-item-wrapper relative mb-1 last:mb-0" data-course-id="{{ $course->id }}">
+                                            <div class="course-item text-xs p-1 rounded-md shadow-sm cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap" style="border-left: 4px solid {{ optional($course->location->campus)->color ?? '#A9A9A9' }}; background-color: color-mix(in srgb, {{ optional($course->location->campus)->color ?? '#A9A9A9' }} 10%, white);" title="{{ optional($course->courseTemplate)->name }} ({{ optional($course->teacher)->name }})" onclick="event.stopPropagation(); openEditModal({{ json_encode($course) }})">
+                                                {{ optional($course->courseTemplate)->name }} ({{ optional($course->teacher)->name }})
+                                            </div>
                                         </div>
                                     @endforeach
                                 @endif
@@ -85,7 +86,7 @@
                 <div class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="campus_id" class="block text-sm font-medium text-gray-700">校區</label>
+                            <label for="campus_id" class="block text-sm font-medium text-gray-700 hover:text-blue-600 hover:underline cursor-pointer">校區</label>
                             <select id="campus_id" name="campus_id" class="form-select block w-full mt-1" required>
                                 <option value="">-- 請選擇 --</option>
                                 @foreach ($campuses as $campus)<option value="{{ $campus->id }}">{{ $campus->name }}</option>@endforeach
@@ -100,14 +101,14 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="course_template_id" class="block text-sm font-medium text-gray-700">課程</label>
+                            <label for="course_template_id" class="block text-sm font-medium text-gray-700 hover:text-blue-600 hover:underline cursor-pointer">課程</label>
                             <select id="course_template_id" name="course_template_id" class="form-select block w-full mt-1" required>
                                 <option value="">-- 請選擇 --</option>
                                 @foreach ($courseTemplates as $template)<option value="{{ $template->id }}">{{ $template->name }}</option>@endforeach
                             </select>
                         </div>
                         <div>
-                            <label for="teacher_id" class="block text-sm font-medium text-gray-700">老師</label>
+                            <label for="teacher_id" class="block text-sm font-medium text-gray-700 hover:text-blue-600 hover:underline cursor-pointer">老師</label>
                             <select id="teacher_id" name="teacher_id" class="form-select block w-full mt-1" required>
                                 <option value="">-- 請選擇 --</option>
                                 @foreach ($teachers as $teacher)<option value="{{ $teacher->id }}">{{ $teacher->name }}</option>@endforeach
@@ -148,7 +149,6 @@
     </div>
 
     @include('partials.management-modal', ['modalId' => 'campus-modal', 'title' => '校區', 'items' => $campuses, 'storeRoute' => route('campuses.store'), 'updateRoute' => '/campuses/', 'deleteRoute' => '/campuses/', 'fields' => [ ['label' => '校區名稱', 'name' => 'name', 'type' => 'text'], ['label' => '代表色', 'name' => 'color', 'type' => 'color'] ]])
-    @include('partials.management-modal', ['modalId' => 'location-modal', 'title' => '地點', 'items' => $locations, 'storeRoute' => route('locations.store'), 'updateRoute' => '/locations/', 'deleteRoute' => '/locations/', 'fields' => [ ['label' => '所屬校區', 'name' => 'campus_id', 'type' => 'select', 'options' => $campuses->pluck('name', 'id')], ['label' => '地點名稱', 'name' => 'name', 'type' => 'text'] ]])
     @include('partials.management-modal', ['modalId' => 'template-modal', 'title' => '課程', 'items' => $courseTemplates, 'storeRoute' => route('course-templates.store'), 'updateRoute' => '/course-templates/', 'deleteRoute' => '/course-templates/', 'fields' => [ ['label' => '課程名稱', 'name' => 'name', 'type' => 'text'], ['label' => '價格', 'name' => 'price', 'type' => 'number'] ]])
     @include('partials.management-modal', ['modalId' => 'teacher-modal', 'title' => '老師', 'items' => $teachers, 'storeRoute' => route('teachers.store'), 'updateRoute' => '/teachers/', 'deleteRoute' => '/teachers/', 'fields' => [ ['label' => '姓名', 'name' => 'name', 'type' => 'text'], ['label' => '電話', 'name' => 'phone_number', 'type' => 'text'] ]])
 
@@ -157,7 +157,7 @@
     <script>
         window.scheduleConfig = {
             data: {
-                campuses: @json($campuses),
+                campuses: @json($campuses->load('locations')),
                 locations: @json($locations),
                 courseTemplates: @json($courseTemplates),
                 teachers: @json($teachers)
@@ -165,10 +165,28 @@
             routes: {
                 courses_store: "{{ route('courses.store') }}",
                 course_base: "/courses/",
+                location_store: "{{ route('locations.store') }}",
+                location_base: "/locations/",
                 schedule_index: "{{ route('schedule.index') }}"
             },
             csrfToken: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         };
+
+        function darken(color, amount) {
+             let usePound = false;
+             if (color[0] == "#") {
+                 color = color.slice(1);
+                 usePound = true;
+             }
+             const num = parseInt(color, 16);
+             let r = (num >> 16) - amount;
+             if (r > 255) r = 255; else if (r < 0) r = 0;
+             let b = ((num >> 8) & 0x00FF) - amount;
+             if (b > 255) b = 255; else if (b < 0) b = 0;
+             let g = (num & 0x0000FF) - amount;
+             if (g > 255) g = 255; else if (g < 0) g = 0;
+             return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16).padStart(6, '0');
+        }
     </script>
     <script src="{{ asset('js/schedule.js') }}" defer></script>
 
