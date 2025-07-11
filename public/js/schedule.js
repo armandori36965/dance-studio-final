@@ -1,9 +1,9 @@
-// 讀取在 Blade 中設定的全域設定
+// --- 1. 全域資料中心 ---
 const AppData = window.scheduleConfig.data;
 const csrfToken = window.scheduleConfig.csrfToken;
 const AppRoutes = window.scheduleConfig.routes;
 
-// --- 核心 Modal 控制函式 ---
+// --- 2. 核心 Modal 控制函式 ---
 function openAddModal(date) {
     const form = document.getElementById('course-form');
     form.reset();
@@ -75,7 +75,7 @@ function resetForm(modalId) {
 }
 
 
-// --- 核心互動與表單處理 ---
+// --- 3. 核心互動與表單處理 ---
 function updateLocationsForCampus(campusId, selectedLocationId = null) {
     const locationSelect = document.getElementById('location_id');
     if (!campusId) {
@@ -123,20 +123,15 @@ async function handleFormSubmit(event) {
         });
 
         const responseText = await response.text();
+        let result = {};
+        try { result = JSON.parse(responseText); } catch (e) { /* 允許空的 response body */ }
 
         if (response.ok) {
-            let result = {};
-            try { result = JSON.parse(responseText); } catch (e) { /* 內容為空或非JSON，保持 result 為空物件 */ }
             showFeedbackModal(result.message || '操作成功！', 'success');
             updateAppDataAndUI(result.data, modelType, form.querySelector('[name="_method"]').value);
         } else {
-            if (response.status === 404) {
-                showFeedbackModal('操作失敗，該項目可能已被刪除。', 'error');
-            } else {
-                let errorResult = {};
-                try { errorResult = JSON.parse(responseText); } catch (e) { /* 內容為空或非JSON */ }
-                showFeedbackModal(errorResult.message || `發生錯誤 (${response.status})`, 'error');
-            }
+            const errorMessage = result.message || `操作失敗 (${response.status})，請檢查後再試。`;
+            showFeedbackModal(errorMessage, 'error');
         }
     } catch (error) {
         console.error('Submit Error:', error);
@@ -153,24 +148,16 @@ function confirmDeleteItem(itemId, itemName, deleteUrl, modelType) {
                 body: new URLSearchParams({ '_method': 'DELETE' })
             });
 
-            // ✨最終修正：只要回應成功，就視為刪除成功，不再解析 body
+            const result = await response.json(); // 假設所有 destroy 都會回傳 JSON
+
             if (response.ok) {
-                showFeedbackModal('刪除成功！', 'success');
-                // 直接用傳入的 itemId 更新畫面，不再依賴後端的回應
-                updateAppDataAndUI({ id: itemId }, modelType, 'DELETE');
+                showFeedbackModal(result.message || '刪除成功！', 'success');
+                // 【關鍵修正】確保 item.id 存在
+                const dataToUpdate = result.data || { id: itemId };
+                updateAppDataAndUI(dataToUpdate, modelType, 'DELETE');
             } else {
-                // 處理失敗的情況
-                if (response.status === 404) {
-                    showFeedbackModal('刪除失敗，該項目可能已被其他人刪除。', 'error');
-                    // 即使後端說找不到，前端也應該同步這個狀態，將項目移除
-                    updateAppDataAndUI({ id: itemId }, modelType, 'DELETE');
-                } else {
-                    // 對於其他錯誤，嘗試解析錯誤訊息
-                    const responseText = await response.text();
-                    let errorResult = {};
-                    try { errorResult = JSON.parse(responseText); } catch (e) { /* 內容為空或非JSON */ }
-                    showFeedbackModal(errorResult.message || `發生錯誤 (${response.status})`, 'error');
-                }
+                const errorMessage = result.message || '刪除失敗';
+                showFeedbackModal(errorMessage, 'error');
             }
         } catch (error) {
             console.error('Delete Error:', error);
@@ -180,13 +167,13 @@ function confirmDeleteItem(itemId, itemName, deleteUrl, modelType) {
 }
 
 function updateAppDataAndUI(item, modelType, method) {
-    const dataKey = modelType.replace(/-(\w)/g, (m, c) => c.toUpperCase()) + 's';
-    
-    // 確保 item 和 item.id 存在，避免過濾時出錯
+    // 【關鍵修正】增加對 item 的有效性檢查，防止JS錯誤
     if (!item || typeof item.id === 'undefined') {
         console.error('Update failed: item or item.id is undefined.', item);
         return;
     }
+    
+    const dataKey = modelType.replace(/-(\w)/g, (m, c) => c.toUpperCase()) + 's';
 
     if (method === 'DELETE') {
         if (AppData[dataKey]) {
@@ -280,43 +267,22 @@ function updateAllSelectOptions(selectId, items, isLocation = false) {
     });
 }
 
-
-// --- 輔助函式 ---
-function openModal(modalId) {
-    document.getElementById(modalId)?.classList.remove('hidden');
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId)?.classList.add('hidden');
-}
-
+// --- 5. 輔助函式 ---
+function openModal(modalId) { document.getElementById(modalId)?.classList.remove('hidden'); }
+function closeModal(modalId) { document.getElementById(modalId)?.classList.add('hidden'); }
 function showFeedbackModal(message, type = 'success', onConfirm = null) {
     const modal = document.getElementById('feedback-modal');
     const iconContainer = modal.querySelector('#feedback-icon');
     const buttonsContainer = modal.querySelector('#feedback-buttons');
     modal.querySelector('#feedback-message').innerHTML = message;
-    const icons = {
-        success: `<svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
-        error: `<svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
-        confirm: `<svg class="w-12 h-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`
-    };
+    const icons = { success: `<svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`, error: `<svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`, confirm: `<svg class="w-12 h-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>` };
     iconContainer.innerHTML = icons[type] || '';
     buttonsContainer.innerHTML = '';
     if (type === 'confirm') {
-        const cancelButton = document.createElement('button');
-        cancelButton.className = 'btn btn-secondary';
-        cancelButton.textContent = '取消';
-        cancelButton.onclick = () => closeModal('feedback-modal');
-        buttonsContainer.appendChild(cancelButton);
-        const confirmButton = document.createElement('button');
-        confirmButton.className = 'btn bg-red-600 text-white hover:bg-red-700';
-        confirmButton.textContent = '確定刪除';
-        confirmButton.onclick = () => {
-            if (onConfirm) onConfirm();
-            closeModal('feedback-modal');
-        };
-        buttonsContainer.appendChild(confirmButton);
+        const cancelButton = document.createElement('button'); cancelButton.className = 'btn btn-secondary'; cancelButton.textContent = '取消'; cancelButton.onclick = () => closeModal('feedback-modal'); buttonsContainer.appendChild(cancelButton);
+        const confirmButton = document.createElement('button'); confirmButton.className = 'btn bg-red-600 text-white hover:bg-red-700'; confirmButton.textContent = '確定刪除'; confirmButton.onclick = () => { if (onConfirm) onConfirm(); closeModal('feedback-modal'); }; buttonsContainer.appendChild(confirmButton);
     } else {
+        // 【修正】將自動關閉時間調整為 1.5 秒
         setTimeout(() => closeModal('feedback-modal'), 1500);
     }
     openModal('feedback-modal');
@@ -330,8 +296,7 @@ function navigateToMonth() {
 
 function applyFilters() {
     const url = new URL(window.location.href);
-    url.searchParams.delete('campus_id');
-    url.searchParams.delete('course_template_id');
+    url.searchParams.delete('campus_id'); url.searchParams.delete('course_template_id');
     const campusId = document.getElementById('filter_campus').value;
     const courseTemplateId = document.getElementById('filter_course_template').value;
     if (campusId) url.searchParams.set('campus_id', campusId);
@@ -339,26 +304,19 @@ function applyFilters() {
     window.location.href = url.toString();
 }
 
-// --- 事件監聽綁定 ---
+// --- 6. 事件監聽綁定 ---
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('campus_id').addEventListener('change', (e) => updateLocationsForCampus(e.target.value));
-    const forms = {
-        'course-form': 'course',
-        'campus-modal-form': 'campus',
-        'location-modal-form': 'location',
-        'template-modal-form': 'course-template',
-        'teacher-modal-form': 'teacher'
-    };
+
+    const forms = { 'course-form': 'course', 'campus-modal-form': 'campus', 'location-modal-form': 'location', 'template-modal-form': 'course-template', 'teacher-modal-form': 'teacher' };
     for (const [formId, modelType] of Object.entries(forms)) {
         const form = document.getElementById(formId);
-        if (form) {
+        if(form) {
             form.dataset.modelType = modelType;
             form.addEventListener('submit', handleFormSubmit);
         }
     }
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
-        modal.addEventListener('click', function() {
-            closeModal(this.id);
-        });
+        modal.addEventListener('click', function() { closeModal(this.id); });
     });
 });

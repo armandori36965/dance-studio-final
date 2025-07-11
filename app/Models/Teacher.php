@@ -10,10 +10,24 @@ class Teacher extends Model
     use HasFactory;
 
     /**
-     * 【修改】將 'rates' 加入到 $fillable 陣列中
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
      */
     protected $fillable = ['name', 'phone_number', 'rates'];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'rates' => 'array',
+    ];
+
+    /**
+     * Get the courses for the teacher.
+     */
     public function courses()
     {
         return $this->hasMany(Course::class);

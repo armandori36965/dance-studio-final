@@ -12,25 +12,26 @@
                             @endif
                         </li>
                     @empty
-                        <li class="py-2 text-gray-500">尚無項目</li>
+                        <li class="py-2 text-gray-500">- 尚無項目</li>
                     @endforelse
                 </ul>
             </div>
         </div>
         <div class="w-1/2 p-6 bg-gray-50 flex flex-col">
-            {{-- 【修正】移除 form 標籤中所有 onsubmit 事件 --}}
-            <form id="{{ $modalId }}-form" method="POST" action="{{ $storeRoute }}" class="space-y-4 flex-grow" 
-                  data-store-route="{{ $storeRoute }}" 
-                  data-update-route="{{ $updateRoute }}" 
+            <form id="{{ $modalId }}-form" method="POST" action="{{ $storeRoute }}" class="space-y-4 flex-grow"
+                  data-store-route="{{ $storeRoute }}"
+                  data-update-route="{{ $updateRoute }}"
                   data-delete-route="{{ $deleteRoute }}">
                 @csrf
                 <input type="hidden" name="_method" value="POST">
                 <h3 id="{{ $modalId }}-form-title" class="text-lg font-header mb-4 text-[#5C5248]">新增項目</h3>
                 @foreach ($fields as $field)
                     <div>
-                        <label for="{{ $field['name'] }}-{{$modalId}}" class="block text-sm font-medium text-gray-700">{{ $field['label'] }}</label>
+                        {{-- 【修正】在 label 的 for 屬性中加入 modalId 前綴，確保唯一性 --}}
+                        <label for="{{ $modalId }}-{{ $field['name'] }}" class="block text-sm font-medium text-gray-700">{{ $field['label'] }}</label>
                         @if ($field['type'] === 'select')
-                            <select name="{{ $field['name'] }}" id="{{ $field['name'] }}-{{$modalId}}" class="form-select mt-1 block w-full">
+                            {{-- 【修正】在 select 的 id 屬性中加入 modalId 前綴 --}}
+                            <select name="{{ $field['name'] }}" id="{{ $modalId }}-{{ $field['name'] }}" class="form-select mt-1 block w-full">
                                 <option value="">-- 請選擇 --</option>
                                 @if(isset($field['options']))
                                     @foreach ($field['options'] as $value => $label)
@@ -39,7 +40,8 @@
                                 @endif
                             </select>
                         @else
-                            <input type="{{ $field['type'] }}" name="{{ $field['name'] }}" id="{{ $field['name'] }}-{{$modalId}}" class="form-input mt-1 block w-full" @if($field['type'] === 'number') min="0" @endif required>
+                            {{-- 【修正】在 input 的 id 屬性中加入 modalId 前綴 --}}
+                            <input type="{{ $field['type'] }}" name="{{ $field['name'] }}" id="{{ $modalId }}-{{ $field['name'] }}" class="form-input mt-1 block w-full" @if($field['type'] === 'number') min="0" @endif required>
                         @endif
                     </div>
                 @endforeach

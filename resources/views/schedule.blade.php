@@ -10,10 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    {{-- 引用外部 CSS 檔案 --}}
     <link rel="stylesheet" href="{{ asset('css/schedule.css') }}">
-    
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto p-4 md:p-8">
@@ -62,8 +59,9 @@
                                 @if(isset($groupedEvents[$date->format('Y-m-d')]))@foreach($groupedEvents[$date->format('Y-m-d')] as $event)<div class="school-event-item text-xs text-center p-1 rounded" title="{{ $event->title }}"><i class="fa fa-calendar-times mr-1"></i>{{ $event->title }}</div>@endforeach @endif
                                 @if(isset($groupedCourses[$date->format('Y-m-d')]))
                                     @foreach ($groupedCourses[$date->format('Y-m-d')] as $course)
-                                        <div class="course-item text-xs p-1.5 rounded-md" style="border-left-color: {{ $course->location->campus->color ?? '#A9A9A9' }};" data-course-id="{{ $course->id }}" onclick="event.stopPropagation(); openEditModal({{ json_encode($course) }})">
-                                            {{ $course->courseTemplate->name }}
+                                        {{-- 【修正】使用 optional() 輔助函式，避免在 location 或 campus 不存在時報錯 --}}
+                                        <div class="course-item text-xs p-1.5 rounded-md" style="border-left-color: {{ optional($course->location->campus)->color ?? '#A9A9A9' }};" data-course-id="{{ $course->id }}" onclick="event.stopPropagation(); openEditModal({{ json_encode($course) }})">
+                                            {{ optional($course->courseTemplate)->name }}
                                         </div>
                                     @endforeach
                                 @endif
@@ -157,9 +155,7 @@
 
     <div id="feedback-modal" class="modal-backdrop fixed inset-0 z-[70] hidden"><div class="modal-content bg-white rounded-lg shadow-xl p-8 w-11/12 max-w-sm text-center" onclick="event.stopPropagation()"><div id="feedback-icon" class="mb-4 flex justify-center"></div><p id="feedback-message" class="text-xl font-medium text-gray-700"></p><div id="feedback-buttons" class="mt-6 flex justify-center gap-3"></div></div></div>
 
-    {{-- 建立資料橋樑，並引用外部 JS --}}
     <script>
-        // 這是一個「資料橋樑」，將 Laravel 的後端資料傳遞給靜態的 JS 檔案
         window.scheduleConfig = {
             data: {
                 campuses: @json($campuses),
@@ -169,7 +165,7 @@
             },
             routes: {
                 courses_store: "{{ route('courses.store') }}",
-                course_base: "/courses/", // 用於更新與刪除
+                course_base: "/courses/",
                 schedule_index: "{{ route('schedule.index') }}"
             },
             csrfToken: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
