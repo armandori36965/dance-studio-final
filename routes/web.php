@@ -1,21 +1,45 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\CampusController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\CourseTemplateController;
 use App\Http\Controllers\SchoolEventController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\VerificationController;
 
 // 預設首頁，直接導向登入頁面
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Laravel 預設的登入、註冊、忘記密碼等路由
-Auth::routes();
+// --- 手動定義所有認證相關的路由 ---
+
+// Login Routes
+Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('login', [LoginController::class, 'login']);
+Route::post('logout', [LoginController::class, 'logout'])->name('logout'); // 已修正
+
+// Registration Routes
+Route::get('register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+Route::post('register', [RegisterController::class, 'register']); // 已修正
+
+// Password Reset Routes
+Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
+
+// Email Verification Routes
+Route::get('email/verify', [VerificationController::class, 'show'])->name('verification.notice');
+Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify'])->name('verification.verify');
+Route::post('email/resend', [VerificationController::class, 'resend'])->name('verification.resend');
+
 
 // --- 需要登入才能訪問的區域 ---
 Route::middleware(['auth'])->group(function () {
@@ -47,10 +71,8 @@ Route::middleware(['auth'])->group(function () {
 
     // 課程範本管理 API
     Route::post('/course-templates', [CourseTemplateController::class, 'store'])->name('course-templates.store');
-    // 【最終修正】將 {courseTemplate} 改為 {course_template}
-    Route::put('/course-templates/{course_template}', [CourseTemplateController::class, 'update'])->name('course-templates.update');
-    // 【最終修正】將 {courseTemplate} 改為 {course_template}
-    Route::delete('/course-templates/{course_template}', [CourseTemplateController::class, 'destroy'])->name('course-templates.destroy');
+    Route::put('/course-templates/{courseTemplate}', [CourseTemplateController::class, 'update'])->name('course-templates.update');
+    Route::delete('/course-templates/{courseTemplate}', [CourseTemplateController::class, 'destroy'])->name('course-templates.destroy');
     
     // 校務事件管理 API (如果需要的話)
     Route::post('/school-events', [SchoolEventController::class, 'store'])->name('school-events.store');

@@ -1,20 +1,20 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Dashboard') }}</div>
+<div class="container mx-auto px-4">
+    <div class="flex justify-center">
+        <div class="w-full md:w-2/3 lg:w-1/2">
+            <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                <div class="px-6 py-4 bg-gray-200 text-gray-700 font-bold text-xl">{{ __('Dashboard') }}</div>
 
-                <div class="card-body">
+                <div class="p-6">
                     @if (session('status'))
-                        <div class="alert alert-success" role="alert">
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
                             {{ session('status') }}
                         </div>
                     @endif
 
-                    {{ __('You are logged in!') }}
+                    <p class="text-gray-700">{{ __('You are logged in!') }}</p>
                 </div>
             </div>
         </div>
